@@ -1,0 +1,51 @@
+# --- Python / sim ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Sim + flight output (regenerable / large) ---
+sim/out/
+sim/*.png          # generated validation plots (openloop_fall, torque_envelope, closed_loop)
+logs/*.csv
+logs/*.bin
+*.npz
+
+# --- CAD: track sources, not derived junk ---
+# SolidWorks backups & locks
+*.sldprt.bak
+*.sldasm.bak
+*.slddrw.bak
+~$*
+*.swp.*
+# Fusion 360 / CAM
+*.f3d.lock
+# Toolpath output is regenerable from the CAM setup
+cad/cam/output/
+*.nc.bak
+# SolidWorks SimulationXpress result files (regenerable, bulky)
+*.eprt
+*.CATAnalysis
+
+# --- Large raw scans (excluded to keep the repo lean) ---
+# 3D scans of BOUGHT parts (61 MB + 8 MB) — not your design work, and they blow
+# past GitHub's file-size comfort zone. To share them, enable Git LFS (see
+# .gitattributes) and delete these two lines.
+cad/BoughtComponents/Scanned/
+
+# --- Arduino / Teensy build ---
+firmware/**/build/
+*.hex
+*.elf
+
+# --- Personal / not for sharing (kept LOCAL, never committed) ---
+# These stay in your folder for your own reference but are excluded from the repo,
+# so nothing personal or AI-assistant-facing ever gets pushed.
+docs/PROJECT_BRIEF.md
+docs/description_draft.md
+
+# --- OS ---
+Thumbs.db
+desktop.ini
+.DS_Store

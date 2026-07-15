@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cubli — Electrical Wiring Reference (Harness ICD)</title>
+<style>
+  :root{
+    --ink:#12181f; --mut:#5d6b7a; --line:#c3cdd7; --bg:#fbfcfd;
+    --pwr:#c0392b; --gnd:#1f2933; --sig:#1f6feb; --i2c:#7a3fb3;
+    --warn:#b8860b; --ok:#1f7a4d; --box:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 32px;background:var(--bg);color:var(--ink);
+       font:14px/1.5 "Segoe UI",system-ui,sans-serif;}
+  h1{font-size:22px;margin:0 0 2px}
+  h2{font-size:16px;margin:34px 0 10px;padding-bottom:5px;border-bottom:2px solid var(--ink)}
+  h3{font-size:13px;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+  .sub{color:var(--mut);font-size:12.5px;margin:0 0 4px}
+  .sheet{background:var(--box);border:1px solid var(--line);border-radius:6px;padding:22px 24px;margin-bottom:26px;
+         box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 4px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#eef2f6;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  code{font:12.5px/1.4 "Consolas",monospace;background:#eef2f6;padding:1px 5px;border-radius:3px}
+  .note{border-left:4px solid var(--warn);background:#fdf8ec;padding:9px 13px;margin:12px 0;font-size:13px;border-radius:0 4px 4px 0}
+  .crit{border-left-color:var(--pwr);background:#fdeeec}
+  .good{border-left-color:var(--ok);background:#edf7f1}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:8px 0 16px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .sw{width:22px;height:3px;border-radius:2px;display:inline-block}
+  svg{width:100%;height:auto;display:block}
+  .m1{color:#c0392b;font-weight:600}.m2{color:#1f7a4d;font-weight:600}.m3{color:#1f6feb;font-weight:600}
+  .ftr{color:var(--mut);font-size:11.5px;margin-top:26px;border-top:1px solid var(--line);padding-top:10px}
+</style>
+</head>
+<body>
+
+<h1>Cubli — Electrical Wiring Reference</h1>
+<p class="sub">Harness ICD · sources: <code>HARDWARE.md</code> §§1–7 (locked) + proposed pin map (not yet absorbed into HARDWARE.md) · Rev C · 2026-07-14</p>
+
+<div class="note crit"><strong>Bring-up order is not optional.</strong>
+1) Logic on USB only, no battery → I2C bus scan, confirm 0x36 / 0x6B enumerate.
+2) IMU first light (raw accel + gyro clean over serial).
+3) Madgwick → valid stable quaternion.
+4) <em>Only then</em> connect 4S to the driver VM rails, with common ground already tied.
+</div>
+
+<!-- ══════════════════ SHEET 1 ══════════════════ -->
+<div class="sheet">
+<h2>Sheet 1 — Power Architecture &amp; Ground Topology</h2>
+
+<div class="legend">
+  <span><i class="sw" style="background:var(--pwr)"></i> Motor power (VM, 14.8 V nom)</span>
+  <span><i class="sw" style="background:var(--gnd)"></i> Ground (star return)</span>
+  <span><i class="sw" style="background:var(--sig)"></i> Logic / PWM (3.3 V)</span>
+  <span><i class="sw" style="background:var(--i2c)"></i> I2C</span>
+</div>
+
+<svg viewBox="0 0 980 485" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#12181f"/>
+    </marker>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#c0392b"/>
+    </marker>
+    <marker id="ab" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#1f6feb"/>
+    </marker>
+  </defs>
+
+  <!-- USB -->
+  <rect x="16" y="30" width="120" height="52" rx="5" fill="#eef2f6" stroke="#12181f" stroke-width="1.5"/>
+  <text x="76" y="52" text-anchor="middle" font-size="13" font-weight="600">USB (PC)</text>
+  <text x="76" y="69" text-anchor="middle" font-size="11" fill="#5d6b7a">5 V · program + log</text>
+
+  <!-- Teensy -->
+  <rect x="200" y="18" width="190" height="120" rx="5" fill="#fff" stroke="#1f6feb" stroke-width="2"/>
+  <text x="295" y="42" text-anchor="middle" font-size="14" font-weight="700" fill="#1f6feb">Teensy 4.1</text>
+  <text x="295" y="60" text-anchor="middle" font-size="11" fill="#5d6b7a">i.MX RT1062 · 3.3 V logic</text>
+  <text x="295" y="80" text-anchor="middle" font-size="11">onboard 3.3 V reg → sensors</text>
+  <text x="295" y="98" text-anchor="middle" font-size="11" fill="#b8860b">VUSB↔VIN pad: INTACT</text>
+  <text x="295" y="114" text-anchor="middle" font-size="10" fill="#5d6b7a">(cut only when BEC is installed)</text>
+  <text x="295" y="130" text-anchor="middle" font-size="10" fill="#5d6b7a">3.3 V rail: 250 mA budget</text>
+  <line x1="136" y1="56" x2="198" y2="56" stroke="#12181f" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- sensors on the Teensy 3.3 V rail + I2C -->
+  <rect x="474" y="18" width="164" height="50" rx="5" fill="#faf5ff" stroke="#7a3fb3" stroke-width="1.5"/>
+  <text x="556" y="37" text-anchor="middle" font-size="12.5" font-weight="600" fill="#7a3fb3">ISM330DHCX IMU</text>
+  <text x="556" y="54" text-anchor="middle" font-size="10.5" fill="#5d6b7a">0x6B · Wire (18/19)</text>
+
+  <rect x="474" y="88" width="164" height="50" rx="5" fill="#faf5ff" stroke="#7a3fb3" stroke-width="1.5"/>
+  <text x="556" y="107" text-anchor="middle" font-size="12.5" font-weight="600" fill="#7a3fb3">AS5600 ×3</text>
+  <text x="556" y="124" text-anchor="middle" font-size="10.5" fill="#5d6b7a">0x36 · one per bus</text>
+
+  <line x1="392" y1="43" x2="472" y2="43" stroke="#7a3fb3" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="392" y1="113" x2="472" y2="113" stroke="#7a3fb3" stroke-width="2" marker-end="url(#a)"/>
+  <text x="432" y="35" text-anchor="middle" font-size="9.5" fill="#7a3fb3">3.3 V + I2C</text>
+  <text x="432" y="105" text-anchor="middle" font-size="9.5" fill="#7a3fb3">3.3 V + I2C ×3</text>
+
+  <!-- Battery chain -->
+  <rect x="16" y="232" width="120" height="60" rx="5" fill="#fdeeec" stroke="#c0392b" stroke-width="2"/>
+  <text x="76" y="255" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">4S LiPo</text>
+  <text x="76" y="272" text-anchor="middle" font-size="11">650 mAh · ≥25 C</text>
+  <text x="76" y="286" text-anchor="middle" font-size="10" fill="#5d6b7a">16.8 V full / 12 V cut</text>
+
+  <rect x="170" y="239" width="86" height="46" rx="5" fill="#fff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="213" y="258" text-anchor="middle" font-size="11.5" font-weight="600">XT30</text>
+  <text x="213" y="274" text-anchor="middle" font-size="10.5" fill="#5d6b7a">loop key</text>
+
+  <rect x="288" y="239" width="86" height="46" rx="5" fill="#fff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="331" y="258" text-anchor="middle" font-size="11.5" font-weight="600">Fuse</text>
+  <text x="331" y="274" text-anchor="middle" font-size="10.5" fill="#5d6b7a">7.5 A</text>
+
+  <line x1="136" y1="262" x2="168" y2="262" stroke="#c0392b" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="256" y1="262" x2="286" y2="262" stroke="#c0392b" stroke-width="3" marker-end="url(#ar)"/>
+
+  <!-- Star ground / distribution board -->
+  <rect x="406" y="205" width="176" height="120" rx="5" fill="#fff8f0" stroke="#12181f" stroke-width="2"/>
+  <text x="494" y="228" text-anchor="middle" font-size="13" font-weight="700">Distribution board</text>
+  <text x="494" y="247" text-anchor="middle" font-size="11" fill="#5d6b7a">STAR GROUND (single node)</text>
+  <text x="494" y="267" text-anchor="middle" font-size="11">470 µF bulk cap</text>
+  <text x="494" y="285" text-anchor="middle" font-size="11">VM fan-out ×3</text>
+  <text x="494" y="305" text-anchor="middle" font-size="10.5" fill="#c0392b" font-weight="600">Teensy GND ties HERE</text>
+  <line x1="374" y1="262" x2="404" y2="262" stroke="#c0392b" stroke-width="3" marker-end="url(#ar)"/>
+
+  <!-- PWM bus: exits Teensy bottom, own corridor above the ground link -->
+  <path d="M 360 140 L 360 160 L 662 160 L 662 179 L 678 179" fill="none" stroke="#1f6feb" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="505" y="153" text-anchor="middle" font-size="10.5" fill="#1f6feb">3× PWM + EN  (3.3 V logic, per motor)</text>
+
+  <!-- common ground link -->
+  <path d="M 232 140 L 232 187 L 480 187 L 480 203" fill="none" stroke="#1f2933" stroke-width="3" stroke-dasharray="6 3" marker-end="url(#a)"/>
+  <text x="356" y="182" text-anchor="middle" font-size="11" font-weight="700" fill="#1f2933">COMMON GROUND — MANDATORY</text>
+
+  <!-- VBAT sense -->
+  <rect x="330" y="352" width="200" height="62" rx="5" fill="#fff" stroke="#5d6b7a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="430" y="371" text-anchor="middle" font-size="12" font-weight="600">VBAT sense divider</text>
+  <text x="430" y="388" text-anchor="middle" font-size="10" fill="#5d6b7a">68 k : 10 k · 100 nF across the 10 k</text>
+  <text x="430" y="405" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1f6feb">→ Teensy pin 41 (A17) · 26 V FS</text>
+  <path d="M 470 325 L 470 350" fill="none" stroke="#5d6b7a" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- BEC — future / untethered, NOT installed -->
+  <rect x="20" y="338" width="290" height="86" rx="5" fill="#fdf8ec" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="165" y="357" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b8860b">BEC (5 V step-down) — NOT INSTALLED</text>
+  <text x="165" y="374" text-anchor="middle" font-size="10" fill="#5d6b7a">3 A unit. Untethered only. 4S bus → 5 V → Teensy VIN.</text>
+  <text x="165" y="388" text-anchor="middle" font-size="10" fill="#c0392b" font-weight="600">Requires cutting the VUSB↔VIN pad FIRST.</text>
+  <text x="165" y="402" text-anchor="middle" font-size="10" fill="#5d6b7a">Feeding VIN with the pad intact shorts the BEC's 5 V</text>
+  <text x="165" y="415" text-anchor="middle" font-size="10" fill="#5d6b7a">to the PC's USB rail. Do not fit during USB bring-up.</text>
+  <path d="M 76 292 L 76 336" fill="none" stroke="#b8860b" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#a)"/>
+
+  <!-- Drivers -->
+  <g>
+    <rect x="680" y="150" width="170" height="58" rx="5" fill="#fff" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="765" y="171" text-anchor="middle" font-size="12.5" font-weight="700" fill="#c0392b">SimpleFOC Mini #1</text>
+    <text x="765" y="188" text-anchor="middle" font-size="10" fill="#5d6b7a">DRV8313 · VM 8–30 V · no shunts</text>
+    <text x="765" y="202" text-anchor="middle" font-size="10" fill="#5d6b7a">3.3 V LDO (10 mA) — DO NOT USE</text>
+
+    <rect x="680" y="222" width="170" height="42" rx="5" fill="#fff" stroke="#1f7a4d" stroke-width="1.5"/>
+    <text x="765" y="243" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1f7a4d">SimpleFOC Mini #2</text>
+    <text x="765" y="258" text-anchor="middle" font-size="10" fill="#5d6b7a">Phase 2</text>
+
+    <rect x="680" y="278" width="170" height="42" rx="5" fill="#fff" stroke="#1f6feb" stroke-width="1.5"/>
+    <text x="765" y="299" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1f6feb">SimpleFOC Mini #3</text>
+    <text x="765" y="314" text-anchor="middle" font-size="10" fill="#5d6b7a">Phase 2</text>
+  </g>
+
+  <line x1="582" y1="228" x2="678" y2="196" stroke="#c0392b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <line x1="582" y1="258" x2="678" y2="245" stroke="#c0392b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <line x1="582" y1="290" x2="678" y2="299" stroke="#c0392b" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="630" y="240" text-anchor="middle" font-size="9.5" fill="#c0392b">VM + GND</text>
+
+  <!-- Motors -->
+  <rect x="872" y="150" width="86" height="58" rx="5" fill="#f4f6f8" stroke="#12181f" stroke-width="1.5"/>
+  <text x="915" y="173" text-anchor="middle" font-size="11.5" font-weight="600">Motor 1</text>
+  <text x="915" y="190" text-anchor="middle" font-size="9.5" fill="#5d6b7a">2804 · 220 KV</text>
+  <rect x="872" y="222" width="86" height="42" rx="5" fill="#f4f6f8" stroke="#12181f" stroke-width="1.5"/>
+  <text x="915" y="248" text-anchor="middle" font-size="11.5" font-weight="600">Motor 2</text>
+  <rect x="872" y="278" width="86" height="42" rx="5" fill="#f4f6f8" stroke="#12181f" stroke-width="1.5"/>
+  <text x="915" y="304" text-anchor="middle" font-size="11.5" font-weight="600">Motor 3</text>
+  <line x1="850" y1="179" x2="870" y2="179" stroke="#12181f" stroke-width="2.5" marker-end="url(#a)"/>
+  <line x1="850" y1="243" x2="870" y2="243" stroke="#12181f" stroke-width="2.5" marker-end="url(#a)"/>
+  <line x1="850" y1="299" x2="870" y2="299" stroke="#12181f" stroke-width="2.5" marker-end="url(#a)"/>
+  <text x="860" y="336" text-anchor="middle" font-size="9.5" fill="#5d6b7a">U/V/W · MX1.25</text>
+
+  <!-- Phase 3 watch -->
+  <rect x="646" y="358" width="320" height="46" rx="5" fill="#fdf8ec" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="806" y="378" text-anchor="middle" font-size="11.5" font-weight="600" fill="#b8860b">PHASE 3 ONLY — brake chopper (R + MOSFET)</text>
+  <text x="806" y="394" text-anchor="middle" font-size="10" fill="#5d6b7a">regen ≈1.9 J/wheel from 217 rad/s; bus must stay &lt; 20 V abs max</text>
+
+  <!-- footnote -->
+  <text x="16" y="447" font-size="10.5" fill="#5d6b7a">Logic (USB 5 V) and motor power (4S) are separate domains. PWM/EN are ground-referenced — if the grounds are not tied, the driver cannot read them.</text>
+  <text x="16" y="464" font-size="10.5" fill="#5d6b7a">Motor return currents must never share an impedance path with signal references (star ground = spacecraft EPS practice).</text>
+</svg>
+
+<div class="note crit"><strong>Three things that will kill the board.</strong>
+(1) Do <em>not</em> power the Teensy from the SimpleFOC Mini's 3.3 V LDO — it sources 10 mA and cannot run the MCU.
+(2) Do <em>not</em> cut the VUSB↔VIN pad yet — while USB and the 4S coexist on the bench you want them isolated; the cut only happens when the BEC is physically in place.
+(3) Common ground gets tied <em>at the star node on the distribution board</em>, not opportunistically at whatever GND pin is nearest.
+</div>
+
+<h3>Power budget check</h3>
+<table>
+<tr><th>Rail</th><th>Source</th><th>Load</th><th>Margin</th></tr>
+<tr><td>3.3 V logic</td><td>Teensy onboard reg (USB 5 V)</td><td>IMU + 3× AS5600 ≈ 40–60 mA</td><td>Comfortable (~250 mA rail)</td></tr>
+<tr><td>VM (14.8 V nom)</td><td>4S 650 mAh via XT30 + 7.5 A fuse</td><td>3 × 2 A peak = 6 A ≈ 9 C</td><td>Fuse sits above 6 A peak, below wiring limit</td></tr>
+</table>
+</div>
+
+<!-- ══════════════════ SHEET 2 ══════════════════ -->
+<div class="sheet">
+<h2>Sheet 2 — Signal Pin Map &amp; Connector ICD</h2>
+
+<h3>I2C bus map — locked (HARDWARE.md §6)</h3>
+<table>
+<tr><th>Bus</th><th>SDA</th><th>SCL</th><th>Devices</th><th>Addr</th><th>Phase</th></tr>
+<tr><td><code>Wire</code></td><td>18</td><td>19</td><td>AS5600 #1 <em>+</em> ISM330DHCX</td><td>0x36 / 0x6B</td><td>1</td></tr>
+<tr><td><code>Wire1</code></td><td>17</td><td>16</td><td>AS5600 #2</td><td>0x36</td><td>2</td></tr>
+<tr><td><code>Wire2</code></td><td>25</td><td>24</td><td>AS5600 #3</td><td>0x36</td><td>2</td></tr>
+</table>
+<div class="note"><strong>Why three buses:</strong> the AS5600's address is hardwired to 0x36 with no address pins, so three of them cannot coexist on one bus. The Teensy 4.1's three native I2C peripherals are exactly why this board was chosen — no multiplexer. Every device board ships its own pull-ups, so one device (or the IMU+encoder pair) per bus is fine; don't add more.</div>
+
+<h3>What each SimpleFOC Mini pin connects to</h3>
+<table>
+<tr><th>Mini pin</th><th>Connects to</th><th>Domain</th></tr>
+<tr><td><code>VM</code>, <code>GND</code> (power header)</td><td>Distribution board → 4S bus</td><td>Motor power (14.8 V)</td></tr>
+<tr><td><code>A</code>, <code>B</code>, <code>C</code></td><td>Motor phases U / V / W (MX1.25)</td><td>Motor power</td></tr>
+<tr><td><code>IN1</code>, <code>IN2</code>, <code>IN3</code></td><td>Three Teensy FlexPWM pins (below)</td><td>3.3 V logic</td></tr>
+<tr><td><code>EN</code></td><td>One Teensy digital pin, per motor</td><td>3.3 V logic</td></tr>
+<tr><td><code>GND</code> (logic header)</td><td>Teensy GND — <strong>routed in the same bundle as IN1–3 / EN</strong></td><td>Signal reference</td></tr>
+<tr><td><code>3V3</code> out</td><td><strong>Nothing. Leave floating.</strong></td><td>—</td></tr>
+</table>
+<div class="note crit"><strong>Two ways to cook the board here.</strong> (1) The logic-side <code>GND</code> is the reference the DRV8313 compares your PWM against — it rides in the <em>signal</em> bundle, not with the motor return. (2) That <code>3V3</code> out pin is a 10 mA LDO; tying it to the Teensy's 3.3 V rail parallels two regulators against each other. Leave it open.</div>
+
+<h3>Motor drive pins — Rev C, regrouped for one FlexPWM module per motor</h3>
+<table>
+<tr><th>Motor</th><th>IN1</th><th>IN2</th><th>IN3</th><th>EN</th><th>FlexPWM module / submodule</th><th>Harness bundle</th><th>Encoder bus</th></tr>
+<tr><td class="m1">M1 (Phase 1)</td><td>4</td><td>5</td><td>6</td><td>3</td><td>PWM2 · sm0A / sm1A / sm2A</td><td><strong>pins 3–6 contiguous</strong></td><td><code>Wire</code></td></tr>
+<tr><td class="m2">M2</td><td>22</td><td>23</td><td>2</td><td>21</td><td>PWM4 · sm0A / sm1A / sm2A</td><td>21–23 + stray at 2</td><td><code>Wire1</code></td></tr>
+<tr><td class="m3">M3</td><td>8</td><td>7</td><td>1</td><td>9</td><td>PWM1 · sm3A / sm3B / sm0X</td><td>7–9 + stray at 1</td><td><code>Wire2</code></td></tr>
+<tr><td>VBAT sense</td><td colspan="6">Pin <strong>41</strong> (= <code>A17</code>) — 68 k : 10 k divider, 100 nF across the 10 k, ≈26 V full-scale</td><td>—</td></tr>
+</table>
+
+<div class="note"><strong>Why these pins and not others.</strong> All three phases of a motor must share one FlexPWM module so they share a carrier. On the Teensy 4.1 that leaves almost no freedom: <code>Wire2</code> eats pins 24/25, which kills FlexPWM1's submodule-2 and submodule-3 X channels, leaving only <code>{0, 1, 7, 8}</code> on that module. FlexPWM3 exposes just one submodule, so it cannot drive a motor at all. FlexPWM4's third submodule only surfaces at pin 2 or 3. The result is forced: PWM2 → M1, PWM4 → M2, PWM1 → M3. Two stray wires is the floor, not a compromise.</div>
+
+<div class="note crit"><strong>Changed from Rev B.</strong> The old M3 (8 / 7 / <s>29</s>) straddled FlexPWM1 <em>and</em> FlexPWM3 — two independent carriers on one motor. That was a real defect, not a cosmetic one. EN moved off 30/31/32 to 3 / 21 / 9 so each motor's five wires (3× PWM + EN + GND) leave the board from one place.</div>
+
+<div class="note"><strong>Set the center-align flag.</strong> <code>#define SIMPLEFOC_TEENSY4_FORCE_CENTER_ALIGNED_3PWM</code> — SimpleFOC does <em>not</em> center-align or sync 3PWM on Teensy 4 by default. The flag does both, and requires every PWM pin to be FlexPWM (never QuadTimer). All nine pins above satisfy that; pins 10–15, 18, 19 are QuadTimer and must never be used for a phase.</div>
+
+<div class="note"><strong>Per-motor EN pins are a bring-up safety feature, not a convenience.</strong> Three separate EN lines let you hardware-isolate two motors while you characterize the third. Bring up M1 alone; the other two stay disabled <em>at the driver</em>, not just "commanded to zero" in firmware.</div>
+
+<h3>SimpleFOC config — per motor (HARDWARE.md §7)</h3>
+<table>
+<tr><th>Parameter</th><th>Value</th><th>Why</th></tr>
+<tr><td><code>BLDCMotor(7)</code></td><td>7 pole pairs</td><td>12N14P</td></tr>
+<tr><td><code>phase_resistance</code></td><td>2.55 Ω</td><td>Enables current <em>estimation</em> (no shunts on the Mini)</td></tr>
+<tr><td><code>phase_inductance</code></td><td>0.00086 H</td><td></td></tr>
+<tr><td><code>KV_rating</code></td><td>220</td><td>Enables back-EMF estimation</td></tr>
+<tr><td><code>torque_controller</code></td><td><code>TorqueControlType::voltage</code></td><td>Only mode this driver supports</td></tr>
+<tr><td><code>voltage_limit</code></td><td>14.5 V</td><td>Below the 16.8 V full-charge bus; flat torque to ~217 rad/s</td></tr>
+<tr><td><code>current_limit</code></td><td>2.0 A</td><td>Motor hard max — <em>estimated</em>, not measured</td></tr>
+</table>
+
+<h3>VBAT sense divider — what it is and why it exists</h3>
+<p style="font-size:13px;margin:6px 0">68 kΩ from the 4S bus to a node, 10 kΩ from that node to ground, node → pin 41. Ratio = 10/(68+10) = <strong>0.128</strong>. A full pack at 16.8 V lands at <strong>2.15 V</strong> — safely inside the Teensy's 0–3.3 V ADC window. Inverted, 3.3 V corresponds to ≈25.7 V of bus, which is the "26 V full-scale."</p>
+<table>
+<tr><th>Job</th><th>Why it matters</th></tr>
+<tr><td>LiPo undervoltage cutoff</td><td>Kill the motors at ~12 V (3.0 V/cell) before the pack is damaged.</td></tr>
+<tr><td>Correct <code>voltage_power_supply</code></td><td>In voltage-mode torque control the commanded torque <em>is</em> a voltage. If the bus sags and firmware doesn't know, your torque quietly drifts — and so does your tuning.</td></tr>
+<tr><td>Phase-3 regen overvoltage</td><td>Trip the brake chopper before the bus hits the motor's 20 V abs max.</td></tr>
+</table>
+<div class="note"><strong>Put a 100 nF cap across the 10 k.</strong> The divider's Thévenin impedance is 68k‖10k ≈ 8.7 kΩ, right at the edge of what the Teensy's SAR ADC wants to see. The cap gives the sampling capacitor a local charge reservoir. Quiescent draw is 16.8 V / 78 kΩ ≈ 215 µA — negligible against 650 mAh. <em>This is a spacecraft EPS telemetry channel, verbatim.</em></div>
+
+<h3>Connector ICD</h3>
+<table>
+<tr><th>Interface</th><th>Connector</th><th>Signals</th><th>Notes</th></tr>
+<tr><td>Motor phases</td><td>MX1.25, 3-pin</td><td>U / V / W</td><td>Staked with RTV at the motor junction</td></tr>
+<tr><td>Driver VM power</td><td>JST XH, 2-pin</td><td>VM / GND</td><td>Twisted pair back to star node</td></tr>
+<tr><td>Driver control</td><td>JST GH, 5-pin (gold)</td><td>IN1 / IN2 / IN3 / EN / GND</td><td>GND in the same bundle as the signals it references</td></tr>
+<tr><td>Encoder / IMU I2C</td><td>Qwiic / JST GH</td><td>3V3 / GND / SDA / SCL</td><td>One bus per encoder; keep runs short</td></tr>
+</table>
+
+<div class="note good"><strong>Color-band and label all three axis harnesses at both ends.</strong> Three identical subsystems is a cross-wiring trap, and a swapped M2/M3 phase bundle presents as a controller sign error you will chase in software for a weekend. Band M1 red / M2 green / M3 blue at both connector ends.</div>
+
+<div class="note"><strong>Mounting.</strong> Boards on short standoffs, short load path into a structural member, target first mode ≳100 Hz (above the 0–50 Hz wheel excitation band). Strain-relieve the harness at every board. The failure mode here is <em>connector fatigue</em>, not structure — an under-constrained board gives you intermittent I2C that looks exactly like a firmware bug.</div>
+</div>
+
+<!-- ══════════════════ CHECKLIST ══════════════════ -->
+<div class="sheet">
+<h2>Re-connect &amp; verify checklist</h2>
+
+<div class="note crit"><strong>What may and may not go on the breadboard.</strong>
+<em>Yes:</em> Teensy, IMU, encoders, I2C, the PWM/EN signal lines, the VBAT divider. That's steps 1–6 and it's exactly what a breadboard is for.
+<em>No:</em> the VM rail and the motor phases. Breadboard contacts are rated ~1 A against your 6 A peak, contact resistance is tens of milliohms, and the loop inductance turns every PWM edge into ringing. Phases and VM run point-to-point in real wire, with the bulk cap sitting at the driver — not three inches away across a spring contact.
+<em>Also no:</em> the BEC. USB-only today.
+</div>
+
+<table>
+<tr><th>#</th><th>Step</th><th>Pass criterion</th></tr>
+<tr><td>1</td><td>Battery <strong>disconnected</strong>, loop key out. Teensy on USB only.</td><td>Board enumerates; blink sketch runs.</td></tr>
+<tr><td>2</td><td>Continuity check: every GND in the harness → star node. Ohm out each phase bundle end-to-end.</td><td>&lt;1 Ω to star; no phase-to-phase or phase-to-GND short.</td></tr>
+<tr><td>3</td><td>Wire IMU + AS5600 #1 to <code>Wire</code> (18/19). I2C scan.</td><td>0x36 <em>and</em> 0x6B both enumerate.</td></tr>
+<tr><td>4</td><td>Scan <code>Wire1</code> (17/16) and <code>Wire2</code> (25/24).</td><td>0x36 on each — one device per bus.</td></tr>
+<tr><td>5</td><td>Stream raw accel + gyro. Rotate the cube by hand about each axis.</td><td>Axes and signs match the body-frame convention; gyro bias small and stable; noise sane.</td></tr>
+<tr><td>6</td><td>Stream AS5600 angle. Rotate each rotor by hand.</td><td>Monotonic 0–4095 wrap; no dropouts (dropouts = magnet gap or I2C wiring).</td></tr>
+<tr><td>7</td><td>All EN lines LOW. <em>Now</em> insert the loop key.</td><td>VBAT sense on pin 41 reads within ~2% of a meter on the pack.</td></tr>
+<tr><td>8</td><td>Enable M1 only. Open-loop <code>voltage_limit</code> ramp, low value first.</td><td>Smooth rotation, no cogging screech, driver not hot.</td></tr>
+<tr><td>9</td><td>SimpleFOC <code>initFOC()</code> on M1 — sensor alignment.</td><td>Reports a sane zero-electric-angle and sensor direction; repeats on re-run.</td></tr>
+</table>
+<div class="note crit">Step 7 is the boundary. Everything before it is recoverable; a wiring error after it is a dead driver, a dead Teensy, or a LiPo event. Do not skip step 2 because "it worked last time" — you are re-mating connectors, which is exactly when a strand bridges.</div>
+</div>
+
+<p class="ftr"><strong>Rev C — 2026-07-14.</strong> Changes vs Rev B: PWM/EN map regrouped to one FlexPWM module per motor (M1 3–6, M2 21–23 + 2, M3 7–9 + 1); old M3 straddled FlexPWM1 and FlexPWM3 and is withdrawn. Center-align flag now required. BEC (3 A) drawn as a not-installed untethered branch. VBAT divider gains a 100 nF ADC cap.<br>
+Sources: <code>HARDWARE.md</code> §§1–7 (locked — parts, limits, I2C bus map) · <a href="https://www.pjrc.com/teensy/td_pulse.html">PJRC Teensy 4.1 FlexPWM timer table</a> · <a href="https://docs.simplefoc.com/choosing_pwm_pins">SimpleFOC — Choosing PWM pins</a>.<br>
+<strong>HARDWARE.md regeneration is due:</strong> this pin map is now a decision, not a proposal. Version-control this file as the harness ICD.</p>
+
+</body>
+</html>

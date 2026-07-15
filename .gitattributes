@@ -1,0 +1,26 @@
+# Normalize line endings for text so desktop (Windows) and laptop don't churn diffs
+* text=auto
+
+# Treat these as binary — never try to line-merge or EOL-convert them
+*.sldprt   binary
+*.sldasm   binary
+*.slddrw   binary
+*.f3d      binary
+*.step     binary
+*.stp      binary
+*.stl      binary
+*.3mf      binary
+*.png      binary
+*.jpg      binary
+*.pdf      binary
+*.hex      binary
+
+# --- OPTIONAL: Git LFS for large CAD/media ---
+# Uncomment these AFTER running `git lfs install` if the repo gets heavy.
+# Keeps big binaries out of the main history so clones stay fast.
+#*.sldprt  filter=lfs diff=lfs merge=lfs -text
+#*.sldasm  filter=lfs diff=lfs merge=lfs -text
+#*.f3d     filter=lfs diff=lfs merge=lfs -text
+#*.step    filter=lfs diff=lfs merge=lfs -text
+#*.stl     filter=lfs diff=lfs merge=lfs -text
+#*.mp4     filter=lfs diff=lfs merge=lfs -text
