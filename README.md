@@ -1,12 +1,18 @@
 # Cubli — a 3-axis reaction-wheel balancing cube
 
+![Cubli reaction-wheel cube — first trial assembly](media/cubli_assembled.jpg)
+
+*First trial fit-up — dry-assembled to check clearances and see how the parts come together.
+Not the finished build; frame tensioning, wiring, and final balancing are still in progress.*
+
 A cube that balances on its corner using three orthogonal reaction wheels. Built as
 phase one of a two-project arc: the ADCS stack developed here — IMU drivers, quaternion
 attitude estimation, nested control loops, BLDC torque control — ports directly to an
 active thrust-vector-controlled model rocket.
 
-**Status:** frame in machining, electronics bring-up in progress, single-axis controller
-tuned and validated in simulation.
+**Status:** prototype assembled; single-axis controller validated in simulation; **motor
+bring-up complete** — one axis spinning under SimpleFOC with the encoder confirming
+commanded velocity. Closed-loop edge balance is the next milestone.
 
 ---
 
